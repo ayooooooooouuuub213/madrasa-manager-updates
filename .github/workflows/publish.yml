@@ -1,0 +1,31 @@
+# Publishes a new version of Madrasa Manager for the clients' automatic updates.
+# Push the files (Setup .exe, .blockmap, latest.yml, notes.md) to the branch "publish":
+# this creates the release vX.Y.Z, then removes the branch.
+name: Publish update
+
+on:
+  push:
+    branches: [publish]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: publish
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V=$(grep -m1 '^version:' latest.yml | awk '{print $2}')
+          echo "Version $V"
+          gh release create "v$V" "Madrasa-Manager-Setup-$V.exe" "Madrasa-Manager-Setup-$V.exe.blockmap" latest.yml \
+            --repo "$GITHUB_REPOSITORY" --target main --title "Version $V" --notes-file notes.md --latest
+      - name: Remove the temporary branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/publish"
