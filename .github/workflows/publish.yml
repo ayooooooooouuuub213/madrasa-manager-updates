@@ -1,6 +1,7 @@
 # Publishes a new version of Madrasa Manager for the clients' automatic updates.
 # Push the files (Setup .exe, .blockmap, latest.yml, notes.md) to the branch "publish":
 # this creates the release vX.Y.Z, then removes the branch.
+# A Setup over 100 MB is pushed in parts (split -b 90M file file.part-) and joined here.
 name: Publish update
 
 on:
@@ -17,6 +18,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: publish
+      - name: Join the Setup (sent in parts when it is over 100 MB)
+        run: |
+          for f in *.exe.part-aa; do
+            [ -e "$f" ] || continue
+            base="${f%.part-aa}"
+            cat "$base".part-* > "$base" && rm "$base".part-*
+            ls -la "$base"
+          done
       - name: Create the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
